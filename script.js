@@ -1,359 +1,370 @@
-class SlotMachine {
-  constructor() {
-    this.names = [];
-    this.isSpinning = false;
-    this.lastWinner = null;
-    this.lastWinners = []; // For triple mode
-    this.reels = [];
-    this.gameMode = "single"; // 'single' or 'triple'
+function createSlotMachine() {
+  // Private variables
+  let names = [];
+  let isSpinning = false;
+  let lastWinner = null;
+  let lastWinners = []; // For triple mode
+  let reels = [];
+  let gameMode = "single"; // 'single' or 'triple'
 
-    this.initializeElements();
-    this.setupEventListeners();
-    this.updateDisplay();
-    this.setupSlotMachine();
+  // DOM elements
+  let nameInput, addNameBtn, spinBtn, clearBtn, removeWinnerBtn;
+  let namesList, nameCount, result, winnerText, lever, gameModeInputs;
+
+  function initializeElements() {
+    nameInput = document.getElementById("nameInput");
+    addNameBtn = document.getElementById("addNameBtn");
+    spinBtn = document.getElementById("spinBtn");
+    clearBtn = document.getElementById("clearBtn");
+    removeWinnerBtn = document.getElementById("removeWinnerBtn");
+    namesList = document.getElementById("namesList");
+    nameCount = document.getElementById("nameCount");
+    result = document.getElementById("result");
+    winnerText = document.getElementById("winnerText");
+    lever = document.getElementById("lever");
+    gameModeInputs = document.querySelectorAll('input[name="gameMode"]');
+
+    // Get grid cells (3x3 grid)
+    reels = [];
+    for (let i = 0; i < 9; i++) {
+      const cell = document.getElementById(`cell${i}`);
+      if (cell) {
+        reels.push(cell);
+      }
+    }
   }
 
-  initializeElements() {
-    this.nameInput = document.getElementById("nameInput");
-    this.addNameBtn = document.getElementById("addNameBtn");
-    this.spinBtn = document.getElementById("spinBtn");
-    this.clearBtn = document.getElementById("clearBtn");
-    this.removeWinnerBtn = document.getElementById("removeWinnerBtn");
-    this.namesList = document.getElementById("namesList");
-    this.nameCount = document.getElementById("nameCount");
-    this.result = document.getElementById("result");
-    this.winnerText = document.getElementById("winnerText");
-    this.lever = document.getElementById("lever");
-    this.gameModeInputs = document.querySelectorAll('input[name="gameMode"]');
-
-    // Get reels
-    this.reels = [document.getElementById("reel1"), document.getElementById("reel2"), document.getElementById("reel3")];
-  }
-
-  setupEventListeners() {
-    this.addNameBtn.addEventListener("click", () => this.addName());
-    this.nameInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") this.addName();
+  function setupEventListeners() {
+    addNameBtn.addEventListener("click", () => addName());
+    nameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") addName();
     });
-    this.spinBtn.addEventListener("click", () => this.pullLever());
-    this.lever.addEventListener("click", () => this.pullLever());
-    this.clearBtn.addEventListener("click", () => this.clearNames());
-    this.removeWinnerBtn.addEventListener("click", () => this.removeWinner());
+    spinBtn.addEventListener("click", () => pullLever());
+    lever.addEventListener("click", () => pullLever());
+    clearBtn.addEventListener("click", () => clearNames());
+    removeWinnerBtn.addEventListener("click", () => removeWinner());
 
     // Game mode change listener
-    this.gameModeInputs.forEach((input) => {
+    gameModeInputs.forEach((input) => {
       input.addEventListener("change", (e) => {
-        this.gameMode = e.target.value;
-        this.updateDisplay();
-        this.updateWinnerDisplay(this.gameMode === "single" ? "🎯 Single Winner Mode" : "🎰 Triple Winners Mode");
+        gameMode = e.target.value;
+        updateDisplay();
+        updateWinnerDisplay(gameMode === "single" ? "🎯 Single Winner Mode" : "🎰 Triple Winners Mode");
       });
     });
   }
 
-  setupSlotMachine() {
-    this.reels.forEach((reel, index) => {
-      const strip = reel.querySelector(".reel-strip");
-      this.populateReel(strip);
+  function setupSlotMachine() {
+    reels.forEach((cell, index) => {
+      if (cell) {
+        populateCell(cell, index);
+      }
     });
   }
 
-  populateReel(strip) {
-    strip.innerHTML = "";
-
-    if (this.names.length === 0) {
-      // Show placeholder when no names
-      for (let i = 0; i < 10; i++) {
-        const item = document.createElement("div");
-        item.className = "reel-item";
-        item.textContent = "???";
-        strip.appendChild(item);
-      }
+  function populateCell(cell, index) {
+    if (names.length === 0) {
+      cell.textContent = "???";
+      cell.className = "grid-cell";
       return;
     }
 
-    // Create a long strip with repeated names for smooth spinning
-    const repeatCount = Math.max(10, this.names.length * 3);
-    for (let i = 0; i < repeatCount; i++) {
-      const item = document.createElement("div");
-      item.className = "reel-item";
-      item.textContent = this.names[i % this.names.length];
-      strip.appendChild(item);
-    }
+    // Initially show a random name
+    const randomName = names[Math.floor(Math.random() * names.length)];
+    cell.textContent = randomName;
+    cell.className = "grid-cell";
+    cell.style.animation = "none"; // Reset any previous animations
+    cell.addEventListener("animationend", () => {
+      cell.style.animation = ""; // Reset animation after it ends
+    });
   }
 
-  addName() {
-    const name = this.nameInput.value.trim();
-    if (name && !this.names.includes(name)) {
-      this.names.push(name);
-      this.nameInput.value = "";
-      this.updateDisplay();
-      this.setupSlotMachine();
-      this.updateWinnerDisplay("Ready to play!");
-    } else if (this.names.includes(name)) {
+  function addName() {
+    const name = nameInput.value.trim();
+    if (name && !names.includes(name)) {
+      names.push(name);
+      nameInput.value = "";
+      updateDisplay();
+      setupSlotMachine();
+      updateWinnerDisplay("Ready to play!");
+    } else if (names.includes(name)) {
       alert("This name is already in the machine!");
     }
   }
 
-  removeName(name) {
-    const index = this.names.indexOf(name);
+  function removeName(name) {
+    const index = names.findIndex((n) => n === name);
     if (index > -1) {
-      this.names.splice(index, 1);
-      this.updateDisplay();
-      this.setupSlotMachine();
+      names.splice(index, 1);
+      updateDisplay();
+      setupSlotMachine();
     }
   }
 
-  clearNames() {
-    if (this.names.length > 0 && confirm("Are you sure you want to clear all names?")) {
-      this.names = [];
-      this.lastWinner = null;
-      this.lastWinners = [];
-      this.updateDisplay();
-      this.setupSlotMachine();
-      this.hideResult();
-      this.updateWinnerDisplay("Add names to play!");
+  function clearNames() {
+    if (names.length > 0 && confirm("Are you sure you want to clear all names?")) {
+      names = [];
+      lastWinner = null;
+      lastWinners = [];
+      updateDisplay();
+      setupSlotMachine();
+      hideResult();
+      updateWinnerDisplay("Add names to play!");
     }
   }
 
-  removeWinner() {
-    if (this.gameMode === "single" && this.lastWinner) {
-      this.removeName(this.lastWinner);
-      this.lastWinner = null;
-      this.hideResult();
-      this.updateWinnerDisplay("Ready to play!");
-    } else if (this.gameMode === "triple" && this.lastWinners.length > 0) {
+  function removeWinner() {
+    if (gameMode === "single" && lastWinner) {
+      removeName(lastWinner);
+      lastWinner = null;
+      hideResult();
+      updateWinnerDisplay("Ready to play!");
+    } else if (gameMode === "triple" && lastWinners.length > 0) {
       // Remove all three winners
-      this.lastWinners.forEach((winner) => this.removeName(winner));
-      this.lastWinners = [];
-      this.hideResult();
-      this.updateWinnerDisplay("Ready to play!");
+      lastWinners.forEach((winner) => removeName(winner));
+      lastWinners = [];
+      hideResult();
+      updateWinnerDisplay("Ready to play!");
     }
   }
 
-  updateDisplay() {
-    this.nameCount.textContent = this.names.length;
+  function updateDisplay() {
+    nameCount.textContent = names.length;
 
     // Update names list
-    this.namesList.innerHTML = "";
-    this.names.forEach((name) => {
+    namesList.replaceChildren();
+    names.forEach((name) => {
       const nameTag = document.createElement("span");
       nameTag.className = "name-tag";
       nameTag.textContent = name;
 
-      if (this.gameMode === "single" && name === this.lastWinner) {
+      if (gameMode === "single" && name === lastWinner) {
         nameTag.classList.add("winner");
-      } else if (this.gameMode === "triple" && this.lastWinners.includes(name)) {
+      } else if (gameMode === "triple" && lastWinners.includes(name)) {
         nameTag.classList.add("winner");
       }
 
-      this.namesList.appendChild(nameTag);
+      namesList.appendChild(nameTag);
     });
 
     // Update button states
-    this.spinBtn.disabled = this.names.length < 2 || this.isSpinning;
-    this.clearBtn.disabled = this.names.length === 0;
-    this.removeWinnerBtn.disabled =
-      (this.gameMode === "single" && !this.lastWinner) || (this.gameMode === "triple" && this.lastWinners.length === 0);
-    this.addNameBtn.disabled = this.isSpinning;
-    this.nameInput.disabled = this.isSpinning;
+    spinBtn.disabled = names.length < 2 || isSpinning;
+    clearBtn.disabled = names.length === 0;
+    removeWinnerBtn.disabled =
+      (gameMode === "single" && !lastWinner) || (gameMode === "triple" && lastWinners.length === 0);
+    addNameBtn.disabled = isSpinning;
+    nameInput.disabled = isSpinning;
 
     // Update game mode inputs
-    this.gameModeInputs.forEach((input) => {
-      input.disabled = this.isSpinning;
+    gameModeInputs.forEach((input) => {
+      input.disabled = isSpinning;
     });
   }
 
-  pullLever() {
-    if (this.isSpinning || this.names.length < 2) return;
+  function pullLever() {
+    if (isSpinning || names.length < 2) return;
 
     // Animate lever pull
-    this.lever.classList.add("pulled");
+    lever.classList.add("pulled");
     setTimeout(() => {
-      this.lever.classList.remove("pulled");
+      lever.classList.remove("pulled");
     }, 200);
 
-    this.startSpinning();
+    startSpinning();
   }
 
-  startSpinning() {
-    this.isSpinning = true;
-    this.updateDisplay();
-    this.hideResult();
-    this.updateWinnerDisplay("🎰 Spinning...");
+  function startSpinning() {
+    isSpinning = true;
+    updateDisplay();
+    hideResult();
+    updateWinnerDisplay("🎰 Spinning...");
 
-    // Add spinning class to all reels with staggered animation
-    this.reels.forEach((reel, index) => {
-      setTimeout(() => {
-        reel.classList.add("spinning");
-      }, index * 200);
+    // Add spinning animation to all cells
+    reels.forEach((cell, index) => {
+      if (cell) {
+        cell.classList.add("spinning");
+        // Start rapid name changes during spin
+        startCellAnimation(cell, index);
+      }
     });
 
     // Play spinning sound effect
-    this.playSpinSound();
+    playSpinSound();
 
-    // Slower, more dramatic stop times
-    const stopTimes = [4000, 6000, 8000]; // Much slower
+    // Stop spinning after delay
+    setTimeout(() => {
+      stopSpinning();
+    }, 3000);
+  }
+
+  function startCellAnimation(cell, index) {
+    if (names.length === 0) return;
+
+    const animationInterval = setInterval(() => {
+      if (!isSpinning) {
+        clearInterval(animationInterval);
+        return;
+      }
+      // Rapidly change the displayed name
+      const randomName = names[Math.floor(Math.random() * names.length)];
+      cell.textContent = randomName;
+    }, 100); // Change name every 100ms during spin
+  }
+
+  function stopSpinning() {
     const winners = [];
 
-    this.reels.forEach((reel, index) => {
-      setTimeout(() => {
-        // Add slowing down effect
-        reel.classList.add("slow-spin");
-        setTimeout(() => {
-          reel.classList.add("stopping");
-          setTimeout(() => {
-            this.stopReel(reel, index);
-            const winner = this.getReelWinner(reel);
-            winners[index] = winner;
+    // Stop all animations and set final values
+    reels.forEach((cell, index) => {
+      if (cell) {
+        cell.classList.remove("spinning");
 
-            // Check if all reels have stopped
-            if (index === this.reels.length - 1) {
-              setTimeout(() => {
-                this.checkForWin(winners);
-              }, 1000);
-            }
-          }, 1000);
-        }, 1000);
-      }, stopTimes[index]);
+        // Set final random name for this cell
+        if (names.length > 0) {
+          const finalName = names[Math.floor(Math.random() * names.length)];
+          cell.textContent = finalName;
+          winners[index] = finalName;
+        } else {
+          cell.textContent = "???";
+          winners[index] = "???";
+        }
+      }
     });
+
+    setTimeout(() => {
+      checkForWin(winners);
+    }, 500);
   }
 
-  stopReel(reel, reelIndex) {
-    reel.classList.remove("spinning", "slow-spin", "stopping");
+  function checkForWin(winners) {
+    if (gameMode === "single") {
+      // Single winner mode - center cell (index 4 in 3x3 grid) determines the winner
+      const winner = winners[4]; // Center cell
 
-    const strip = reel.querySelector(".reel-strip");
-    const items = strip.querySelectorAll(".reel-item");
+      // Check for center row winning pattern
+      const patterns = checkWinningPatterns(winners);
 
-    if (items.length === 0) return;
-
-    // Calculate random stop position
-    const randomIndex = Math.floor(Math.random() * this.names.length);
-    const itemHeight = 60; // Height of each reel item
-    const stopPosition = -(randomIndex * itemHeight + 60); // +60 to center in window
-
-    strip.style.transform = `translateY(${stopPosition}px)`;
-    strip.style.transition = "transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
-  }
-
-  getReelWinner(reel) {
-    const strip = reel.querySelector(".reel-strip");
-    const transform = strip.style.transform;
-    const translateY = parseInt(transform.match(/-?\d+/)[0]);
-    const itemHeight = 60;
-    const itemIndex = Math.abs(Math.floor((translateY + 60) / itemHeight));
-
-    if (this.names.length === 0) return "???";
-    return this.names[itemIndex % this.names.length];
-  }
-
-  checkForWin(winners) {
-    if (this.gameMode === "single") {
-      // Single winner mode - center reel (index 1) determines the winner
-      const winner = winners[1]; // Center reel
-
-      // Check if all three reels show the same name for jackpot
-      const isJackpot = winners.every((w) => w === winner && w !== "???");
-
-      if (isJackpot) {
-        this.showJackpot(winner);
+      if (patterns.jackpot) {
+        showJackpot(winner);
       } else {
-        this.showSingleResult(winner);
+        showSingleResult(winner);
       }
 
-      this.lastWinner = winner;
+      lastWinner = winner;
     } else {
-      // Triple winners mode - all three reels show the winners
-      const validWinners = winners.filter((w) => w !== "???");
+      // Triple winners mode - check for center row pattern only
+      const patterns = checkWinningPatterns(winners);
 
-      if (validWinners.length === 3) {
-        // Check if all three are the same for super jackpot
-        const isTripleJackpot = validWinners.every((w) => w === validWinners[0]);
-
-        if (isTripleJackpot) {
-          this.showTripleJackpot(validWinners[0]);
-        } else {
-          this.showTripleResult(validWinners);
-        }
-
-        this.lastWinners = validWinners;
+      if (patterns.line) {
+        showTripleResult(patterns.lineWinners);
+        lastWinners = patterns.lineWinners;
+      } else {
+        // Show center winner as fallback
+        showSingleResult(winners[4]);
+        lastWinner = winners[4];
       }
     }
 
-    this.isSpinning = false;
-    this.updateDisplay();
+    isSpinning = false;
+    updateDisplay();
   }
 
-  showJackpot(winner) {
-    this.lastWinner = winner;
-    this.updateWinnerDisplay(`🎰 JACKPOT! 🎰`);
+  function checkWinningPatterns(winners) {
+    // Check for winning patterns in 3x3 grid - only center row matters
+    const patterns = {
+      jackpot: false,
+      line: false,
+      winningName: null,
+      lineWinners: [],
+    };
 
-    this.result.innerHTML = `
+    // Only check the center row (middle horizontal line: cells 3, 4, 5)
+    const centerRow = [3, 4, 5];
+    const [a, b, c] = centerRow;
+
+    if (winners[a] === winners[b] && winners[b] === winners[c] && winners[a] !== "???") {
+      patterns.line = true;
+      patterns.lineWinners = [winners[a], winners[b], winners[c]];
+      patterns.winningName = winners[a];
+
+      // If all three in the center row are the same, it's also a jackpot
+      patterns.jackpot = true;
+    }
+
+    return patterns;
+  }
+
+  function showJackpot(winner) {
+    lastWinner = winner;
+    updateWinnerDisplay(`🎰 JACKPOT! 🎰`);
+
+    result.innerHTML = `
             <div class="result-display show jackpot">
                 <h2>🎰💰 JACKPOT! 💰🎰</h2>
                 <div class="winner-name">${winner}</div>
-                <p>Triple Match! Incredible!</p>
+                <p>Center cell winner!</p>
             </div>
         `;
 
     // Enhanced celebration for jackpot
-    this.playJackpotSound();
-    this.startLightShow();
+    playJackpotSound();
+    startLightShow();
   }
 
-  showSingleResult(winner) {
-    this.updateWinnerDisplay(`🎯 Winner: ${winner}`);
+  function showSingleResult(winner) {
+    updateWinnerDisplay(`🎯 Winner: ${winner}`);
 
-    this.result.innerHTML = `
+    result.innerHTML = `
       <div class="result-display show">
         <h2>🎯 Single Winner! 🎯</h2>
         <div class="winner-name">${winner}</div>
-        <p>Selected from the center reel!</p>
+        <p>Selected from the center cell!</p>
       </div>
     `;
 
-    this.playCelebrationSound();
+    playCelebrationSound();
   }
 
-  showTripleResult(winners) {
-    this.updateWinnerDisplay(`🎰 Triple Winners!`);
+  function showTripleResult(winners) {
+    updateWinnerDisplay(`🎰 Center Row Winners!`);
 
-    this.result.innerHTML = `
+    result.innerHTML = `
       <div class="result-display show">
-        <h2>� Triple Winners! �</h2>
+        <h2>🎊 Center Row Winners! 🎊</h2>
         <div class="winner-names">
-          ${winners.map((winner) => `<div class="winner-name">${winner}</div>`).join("")}
+          <div class="winner-name">${winners[0]}</div>
         </div>
-        <p>Congratulations to all three winners!</p>
+        <p>Three in a row in the center!</p>
       </div>
     `;
 
-    this.playCelebrationSound();
+    playCelebrationSound();
   }
 
-  showTripleJackpot(winner) {
-    this.updateWinnerDisplay(`🎰💰 TRIPLE JACKPOT! 💰🎰`);
+  function showTripleJackpot(winner) {
+    updateWinnerDisplay(`🎰💰 CENTER ROW JACKPOT! 💰🎰`);
 
-    this.result.innerHTML = `
+    result.innerHTML = `
       <div class="result-display show jackpot">
-        <h2>🎰💰 TRIPLE JACKPOT! 💰🎰</h2>
+        <h2>🎰💰 CENTER ROW JACKPOT! 💰🎰</h2>
         <div class="winner-name">${winner}</div>
-        <p>All three reels match! INCREDIBLE!</p>
+        <p>All center row cells match! INCREDIBLE!</p>
       </div>
     `;
 
-    this.playJackpotSound();
-    this.startLightShow();
+    playJackpotSound();
+    startLightShow();
   }
 
-  updateWinnerDisplay(text) {
-    this.winnerText.textContent = text;
+  function updateWinnerDisplay(text) {
+    winnerText.textContent = text;
   }
 
-  hideResult() {
-    this.result.innerHTML = "";
+  function hideResult() {
+    result.replaceChildren();
   }
 
-  startLightShow() {
+  function startLightShow() {
     const lights = document.querySelectorAll(".light");
     lights.forEach((light, index) => {
       light.style.animationDuration = "0.3s";
@@ -363,25 +374,25 @@ class SlotMachine {
     });
   }
 
-  playSpinSound() {
-    this.createSound([200, 250, 300], [0.1, 0.1, 0.1], "sine", 2);
+  function playSpinSound() {
+    createSound([200, 250, 300], [0.1, 0.1, 0.1], "sine", 2);
   }
 
-  playCelebrationSound() {
-    this.createSound([523, 659, 784], [0.2, 0.2, 0.2], "sine", 0.5);
+  function playCelebrationSound() {
+    createSound([523, 659, 784], [0.2, 0.2, 0.2], "sine", 0.5);
   }
 
-  playJackpotSound() {
+  function playJackpotSound() {
     // Play a series of ascending notes for jackpot
     const notes = [261, 329, 392, 523, 659, 784, 1047];
     notes.forEach((freq, index) => {
       setTimeout(() => {
-        this.createSound([freq], [0.3], "sine", 0.3);
+        createSound([freq], [0.3], "sine", 0.3);
       }, index * 200);
     });
   }
 
-  createSound(frequencies, volumes, type = "sine", duration = 0.5) {
+  function createSound(frequencies, volumes, type = "sine", duration = 0.5) {
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -406,11 +417,35 @@ class SlotMachine {
       // Silently fail if audio context is not available
     }
   }
+  // Initialize the slot machine
+  initializeElements();
+  setupEventListeners();
+  updateDisplay();
+  setupSlotMachine();
+
+  // Return public interface
+  return {
+    addName,
+    removeName,
+    clearNames,
+    removeWinner,
+    pullLever,
+    updateDisplay,
+    setupSlotMachine,
+    updateWinnerDisplay,
+    // Expose names array for external access
+    get names() {
+      return names;
+    },
+    set names(value) {
+      names = value;
+    },
+  };
 }
 
 // Initialize the slot machine when the page loads
 document.addEventListener("DOMContentLoaded", () => {
-  window.slotMachine = new SlotMachine();
+  window.slotMachine = createSlotMachine();
 
   // Add some default names for demo
   const defaultNames = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank"];

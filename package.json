@@ -1,0 +1,29 @@
+{
+  "name": "slot-0-names",
+  "version": "1.0.0",
+  "description": "A slot machine name picker with 3x3 grid layout",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server . -p 3000 -o",
+    "dev": "npx live-server --port=3000",
+    "build": "echo 'No build process needed for static HTML/CSS/JS'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "slot-machine",
+    "name-picker",
+    "javascript",
+    "html",
+    "css",
+    "game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
